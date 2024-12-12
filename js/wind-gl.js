@@ -1,3 +1,4 @@
+
 // WebGL utility functions
 function createProgram(gl, vertexSource, fragmentSource) {
     const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexSource);
@@ -67,19 +68,16 @@ class WindGL {
     constructor(gl) {
         this.gl = gl;
         
-        // Use single world resolution
-        this.gridResX = 1440;
-        this.gridResY = 720;
+        this.gridResX = 1296*3;
+        this.gridResY = 654*3;
         this.pointCount = this.gridResX * this.gridResY;
         
-        // Longitude and latitude ranges
         this.lonRange = [-180, 180]; 
         this.latRange = [-90, 90];
         
         this.createShaders();
         this.createPoints();
         
-        // Default color ramp
         this.colorRamps = {
             0.0: '#3288bd',
             0.1: '#66c2a5',
@@ -109,14 +107,24 @@ class WindGL {
             varying vec4 v_color;
             
             void main() {
-                // Use position directly for texture coordinates
-                vec2 texCoords = vec2(a_pos.x, 1.0 - a_pos.y);
+                // Convert position to lat/lon
+                float lon = (a_pos.x * 360.0) - 180.0;
+                float lat = 90.0 - (a_pos.y * 180.0);  // Corrected latitude calculation
                 
-                // Get wind data from texture
+                // Create normalized coordinates
+                vec2 position = vec2(
+                    lon / 180.0,
+                    lat / 90.0  // Linear mapping for latitude
+                );
+                
+                // Apply zoom and offset
+                vec2 zoomedPos = position * u_zoom + u_offset;
+                
+                // Get wind data using original texture coordinates
+                vec2 texCoords = vec2(a_pos.x, a_pos.y);
                 vec2 velocity = mix(u_wind_min, u_wind_max, texture2D(u_wind, texCoords).rg);
                 float speed = length(velocity) / length(u_wind_max);
                 
-                // Color based on wind speed 
                 vec2 ramp_pos = vec2(
                     fract(16.0 * speed),
                     floor(16.0 * speed) / 16.0  
@@ -124,14 +132,11 @@ class WindGL {
                 vec4 color = texture2D(u_color_ramp, ramp_pos);
                 v_color = vec4(color.rgb, color.a * u_opacity);
                 
-                // Position in normalized device coordinates
-                vec2 position = a_pos * 2.0 - 1.0;
-                vec2 zoomedPos = position * u_zoom + u_offset;
-                gl_Position = vec4(zoomedPos.x, zoomedPos.y, 0, 1);
+                gl_Position = vec4(zoomedPos, 0, 1);
                 gl_PointSize = 4.0 * u_zoom;
             }
         `;
-                
+
         const fragmentSource = `
             precision highp float;
             varying vec4 v_color;
@@ -150,8 +155,6 @@ class WindGL {
         for (let i = 0; i < this.gridResY; i++) {
             for (let j = 0; j < this.gridResX; j++) {
                 const idx = (i * this.gridResX + j) * 2;
-                
-                // Normalize coordinates to 0-1 range
                 points[idx] = j / (this.gridResX - 1);
                 points[idx + 1] = i / (this.gridResY - 1); 
             }
@@ -163,29 +166,36 @@ class WindGL {
     }
 
     syncWithLeafletBounds(map) {
-        // Get Leaflet's bounds
         const bounds = map.getBounds();
         const west = bounds.getWest();
         const east = bounds.getEast();
         const north = bounds.getNorth();
         const south = bounds.getSouth();
     
-        // Calculate the center point
-        const centerLon = (west + east) / 2;
         const centerLat = (north + south) / 2;
+        const centerLon = (west + east) / 2;
     
-        // Calculate the zoom level based on the longitude span
+        // Calculate zoom based on longitude span
         const lonSpan = Math.abs(east - west);
-        const newZoom = 360 / lonSpan;
+        const zoom = 360 / lonSpan;
     
-        // Calculate offsets based on the center point
-        const offsetX = -centerLon / 180;
-        const offsetY = -centerLat / 90;
+        this.mapBounds = {
+            north: north,
+            south: south,
+            east: east,
+            west: west,
+            centerLat: centerLat,
+            centerLon: centerLon
+        };
     
-        // Update the wind visualization
-        this.setZoom(newZoom, offsetX, offsetY);
+        // Update transform parameters
+        this.zoom = zoom;
+        this.offsetX = centerLon / 180;
+        this.offsetY = centerLat / 90;
+    
         this.draw();
     }
+
 
     setColorRamp(colors) {
         this.colorRamps = colors;
@@ -232,51 +242,79 @@ class WindGL {
         this.zoom = zoom;
         this.offsetX = offsetX;
         this.offsetY = offsetY;
-
-        // Calculate bounds in longitude and latitude
-        const lonHalfSpan = 180 / zoom;
-        const latHalfSpan = 90 / zoom;
-
-        this.mapBounds = {
-            north: Math.min(90, latHalfSpan - this.offsetY * 90),
-            south: Math.max(-90, -latHalfSpan - this.offsetY * 90),
-            east: Math.min(180, lonHalfSpan - this.offsetX * 180),
-            west: Math.max(-180, -lonHalfSpan - this.offsetX * 180)
-        };
     }
 
-    getBounds() {
-        return {
-            ...this.mapBounds,
-            center: {
-                lat: (this.mapBounds.north + this.mapBounds.south) / 2,
-                lon: (this.mapBounds.east + this.mapBounds.west) / 2
-            }
-        };
-    }
-        
-    // Add helper method for Mercator calculations
-    latToMercatorY(lat) {
-        const sin = Math.sin(lat * Math.PI / 180);
-        return 0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI);
-    }
-    
-    mercatorYToLat(y) {
-        return 90 - 360 * Math.atan(Math.exp((y - 0.5) * 2 * Math.PI)) / Math.PI;
-    }
-    
     setOpacity(opacity) {
         this.opacity = opacity;
     }
 
-    convertToTexCoords(latLon) {
-        return {
-            x: (latLon.lon + 180) / 360,
-            y: 1 - (latLon.lat + 90) / 180 
+    getBounds() {
+        return this.mapBounds || {
+            north: 90,
+            south: -90,
+            east: 180,
+            west: -180,
+            center: {
+                lat: 0,
+                lon: 0
+            }
         };
     }
 
-    // In the WindGL class, modify the getWindAtPoint method:
+    
+    // In WindGL class, replace the screenToLatLon method with:
+
+    screenToLatLon(screenX, screenY) {
+        const rect = this.gl.canvas.getBoundingClientRect();
+        
+        // Convert screen coordinates to NDC
+        const ndcX = (screenX - rect.left) / rect.width * 2 - 1;
+        const ndcY = 1 - (screenY - rect.top) / rect.height * 2;
+    
+        const bounds = this.getBounds();
+    
+        // Calculate lon linearly
+        const lonRange = bounds.east - bounds.west;
+        const lon = bounds.west + (ndcX + 1) * lonRange / 2;
+    
+        // Calculate lat using Mercator projection
+        function latToMercatorY(lat) {
+            return Math.log(Math.tan((90 + lat) * Math.PI / 360)) / Math.PI;
+        }
+    
+        function mercatorYToLat(y) {
+            return 360 * Math.atan(Math.exp(y * Math.PI)) / Math.PI - 90;
+        }
+    
+        const northMercY = latToMercatorY(bounds.north);
+        const southMercY = latToMercatorY(bounds.south);
+        const mercRange = northMercY - southMercY;
+        
+        // Interpolate in Mercator space
+        const normalizedY = (1 - ndcY) / 2;
+        const mercY = northMercY - normalizedY * mercRange;
+        const lat = mercatorYToLat(mercY);
+    
+        return {
+            lat: lat,
+            lon: lon
+        };
+    }
+    
+    // Update convertToTexCoords accordingly
+    convertToTexCoords(latLon) {
+        function latToMercatorY(lat) {
+            return Math.log(Math.tan((90 + lat) * Math.PI / 360)) / Math.PI;
+        }
+    
+        const mercY = latToMercatorY(latLon.lat);
+        
+        return {
+            x: (latLon.lon + 180) / 360,
+            y: (mercY + 1) / 2  // Normalize mercator Y to [0,1]
+        };
+    }
+    
 
     getWindAtPoint(latLon) {
         if (!this.windData || !this.windData.image) return null;
@@ -291,7 +329,6 @@ class WindGL {
     
         if (!this._tempCanvas) {
             this._tempCanvas = document.createElement('canvas');
-            // Add willReadFrequently attribute for better performance
             this._tempCtx = this._tempCanvas.getContext('2d', { willReadFrequently: true });
             this._tempCanvas.width = width;
             this._tempCanvas.height = height;
@@ -309,9 +346,6 @@ class WindGL {
             pixel: [pixel[0], pixel[1], pixel[2]]
         };
     }
-    interpolateWindComponent(pixelValue, min, max) {
-        return min + (pixelValue / 255) * (max - min);
-    }
 
     calculateWindSpeed(u, v) {
         return Math.sqrt(u * u + v * v);
@@ -322,53 +356,51 @@ class WindGL {
         return direction;
     }
 
-    
-    // In wind-gl.js, update the screenToLatLon method:
-
-    // Replace the createPoints method in WindGL class with this corrected version:
-createPoints() {
-    const points = new Float32Array(this.pointCount * 2);
-    const PI = Math.PI;
-    
-    for (let i = 0; i < this.gridResY; i++) {
-        for (let j = 0; j < this.gridResX; j++) {
-            const idx = (i * this.gridResX + j) * 2;
+    draw() {
+        const gl = this.gl;
+        
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.disable(gl.DEPTH_TEST);
+        gl.disable(gl.STENCIL_TEST);
+        
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        
+        if (this.windData) {
+            gl.useProgram(this.program.program);
             
-            // Convert grid position to normalized coordinates (0 to 1)
-            const x = j / (this.gridResX - 1);
-            const y = i / (this.gridResY - 1);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.posBuffer);
+            gl.enableVertexAttribArray(this.program.a_pos);
+            gl.vertexAttribPointer(this.program.a_pos, 2, gl.FLOAT, false, 0, 0);
             
-            // Store the normalized coordinates directly
-            // No need for Mercator projection here as it's handled in the vertex shader
-            points[idx] = x;         // longitude coordinate (0 to 1)
-            points[idx + 1] = y;     // latitude coordinate (0 to 1)
+            bindTexture(gl, this.windTexture, 0);
+            bindTexture(gl, this.colorRampTexture, 1);
+            
+            gl.uniform1i(this.program.u_wind, 0);
+            gl.uniform1i(this.program.u_color_ramp, 1);
+            gl.uniform2f(this.program.u_wind_min, this.windData.uMin, this.windData.vMin);
+            gl.uniform2f(this.program.u_wind_max, this.windData.uMax, this.windData.vMax);
+            gl.uniform1f(this.program.u_zoom, this.zoom);
+            gl.uniform2f(this.program.u_offset, this.offsetX, this.offsetY);
+            gl.uniform1f(this.program.u_opacity, this.opacity);
+            
+            gl.drawArrays(gl.POINTS, 0, this.pointCount);
         }
     }
-    
-    this.posBuffer = this.gl.createBuffer();
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.posBuffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, points, this.gl.STATIC_DRAW);
-}
 
-    // Replace the screenToLatLon method with this corrected version:
-    screenToLatLon(screenX, screenY) {
-        const rect = this.gl.canvas.getBoundingClientRect();
-        
-        // Convert screen coordinates to Normalized Device Coordinates (NDC)
-        const ndcX = (screenX - rect.left) / rect.width * 2 - 1;
-        const ndcY = 1 - (screenY - rect.top) / rect.height * 2;
-    
-        // Apply inverse of zoom and offset
-        const mapX = (ndcX + this.offsetX) / this.zoom;
-        const mapY = (ndcY + this.offsetY) / this.zoom;
-    
-        // Convert NDC to longitude and latitude
-        const lon = mapX * 180;
-        const lat = mapY * 90;
-    
-        return { lat, lon };
+    resize() {
+        const gl = this.gl;
+        const canvas = gl.canvas;
+        const displayWidth = canvas.clientWidth;
+        const displayHeight = canvas.clientHeight;
+
+        if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+            canvas.width = displayWidth;
+            canvas.height = displayHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
     }
-    // Add these helper methods for testing and validation:
 
     validateLatLon(lat, lon) {
         console.log('Validating coordinates:', { lat, lon });
@@ -393,55 +425,10 @@ createPoints() {
         return result;
     }
 
-    
-          
-        
-        draw() {
-            const gl = this.gl;
-            
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            gl.disable(gl.DEPTH_TEST);
-            gl.disable(gl.STENCIL_TEST);
-            
-            gl.enable(gl.BLEND);
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-            
-            // Only proceed with drawing if we have wind data
-            if (this.windData) {
-                gl.useProgram(this.program.program);
-                
-                gl.bindBuffer(gl.ARRAY_BUFFER, this.posBuffer);
-                gl.enableVertexAttribArray(this.program.a_pos);
-                gl.vertexAttribPointer(this.program.a_pos, 2, gl.FLOAT, false, 0, 0);
-                
-                bindTexture(gl, this.windTexture, 0);
-                bindTexture(gl, this.colorRampTexture, 1);
-                
-                gl.uniform1i(this.program.u_wind, 0);
-                gl.uniform1i(this.program.u_color_ramp, 1);
-                gl.uniform2f(this.program.u_wind_min, this.windData.uMin, this.windData.vMin);
-                gl.uniform2f(this.program.u_wind_max, this.windData.uMax, this.windData.vMax);
-                gl.uniform1f(this.program.u_zoom, this.zoom);
-                gl.uniform2f(this.program.u_offset, this.offsetX, this.offsetY);
-                gl.uniform1f(this.program.u_opacity, this.opacity);
-                
-                gl.drawArrays(gl.POINTS, 0, this.pointCount);
-            }
-        }
-    
-    resize() {
-        const gl = this.gl;
-        const canvas = gl.canvas;
-        const displayWidth = canvas.clientWidth;
-        const displayHeight = canvas.clientHeight;
-
-        if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-            canvas.width = displayWidth;
-            canvas.height = displayHeight;
-            gl.viewport(0, 0, canvas.width, canvas.height);
-        }
+    interpolateWindComponent(pixelValue, min, max) {
+        return min + (pixelValue / 255) * (max - min);
     }
 }
 
+// Make WindGL available globally
 window.WindGL = WindGL;

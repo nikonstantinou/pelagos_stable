@@ -2,11 +2,14 @@ console.log("Script is running");
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    
     // Initialize the map
     const map = L.map('map-container', {
         center: [0, 0],
-        noWrap: true,   
-        zoom: 2.1,  
+        noWrap: false,   
+        zoom: 2.5, 
+        maxZoom: 18,
+        minZoom: 2.3,
         maxBounds: [[-90, -180], [90, 180]], 
         maxBoundsViscosity: 1.0,   
         zoomControl: true,
@@ -25,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
         styles: 'confini',
         SRS: 'EPSG%3A900913',
         maxZoom: 18,
-        minZoom: 1,
+        minZoom: 2.3,
         version: '1.1.1',
         format: 'image/png',
         maxBounds: [[-90, -180], [90, 180]], 
@@ -60,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const directionElement = document.getElementById('direction');
 
     // Initialize state variables
-    let zoom = 2.1;
+    let zoom = 2.5;
     let offsetX = 0.0;
     let offsetY = 0.0;
     let isDragging = false;
@@ -72,7 +75,9 @@ document.addEventListener('DOMContentLoaded', function() {
         top: -1,
         bottom: 1
     };
-    const pxRatio = Math.max(Math.floor(window.devicePixelRatio) || 1, 2);
+
+    // ?????????????????????
+    const pxRatio = Math.max(Math.floor(window.devicePixelRatio) || 1, 1);
 
     // Initialize WebGL
     const gl = canvas.getContext('webgl', {antialiasing: false});
@@ -144,16 +149,34 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     canvas.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            
+            const center = map.getCenter();
+            // Scale down the movement by adjusting the divisor
+            const scale = map.getZoom(); // Use zoom level to adjust movement scale
+            const moveScale = Math.pow(2, scale) / 4;
+            
+            const newLat = center.lat + (dy / (map.getContainer().clientHeight * moveScale)) * 180;
+            const newLng = center.lng - (dx / (map.getContainer().clientWidth * moveScale)) * 360;
+            
+            map.setView([newLat, newLng], map.getZoom(), {animate: false});
+            
+            lastX = e.clientX;
+            lastY = e.clientY;
+        }
         if (wind && wind.windData) {
             const windLatLon = wind.screenToLatLon(e.clientX, e.clientY);
             const windData = wind.getWindAtPoint(windLatLon);
             let speed = 0;
             let direction = 0;
+            const bounds = map.getBounds();
             if (windData) {
                 speed = wind.calculateWindSpeed(windData.u, windData.v);
                 direction = wind.calculateWindDirection(windData.u, windData.v);
             }
-
+    
             const point = map.containerPointToLatLng([e.clientX, e.clientY]);
             const nwBounds = map.getBounds().getNorthWest();
             const seBounds = map.getBounds().getSouthEast();
@@ -168,42 +191,72 @@ document.addEventListener('DOMContentLoaded', function() {
             const rect = canvas.getBoundingClientRect();
             const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
             const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    
+            // Prepare detailed map and canvas bounds information
+            const mapBounds = map.getBounds();
+            const mapSize = map.getSize();
+            const mapPixelBounds = map.getPixelBounds();
+            const PI = 3.14159265359;
+            
+            function latToMercatorY(lat) {
+                return Math.log(Math.tan(Math.PI/4 + lat * Math.PI/180 / 2)) / Math.PI;
+            }
 
-            infoDisplay.innerHTML = `
+            
+            // Inside the mousemove event handler where infoDisplay.innerHTML is set
+
+                //const bounds = map.getBounds();
+                const west = bounds.getWest();
+                const east = bounds.getEast();
+                const north = bounds.getNorth();
+                const south = bounds.getSouth();
+
+                
+
+                infoDisplay.innerHTML = ` 
+                
+                    <div style="border-bottom: 1px solid rgba(255,255,255,0.3); margin-bottom: 8px; padding-bottom: 8px;">
+                            <strong>🌐 Leaflet Bounds:</strong><br>
+                            N: ${mapBounds.getNorth().toFixed(4)}° | S: ${mapBounds.getSouth().toFixed(4)}°<br>
+                            E: ${mapBounds.getEast().toFixed(4)}° | W: ${mapBounds.getWest().toFixed(4)}°<br>
+                            Zoom: ${map.getZoom().toFixed(2)}<br>
+                            Center: ${mapCenter.lat.toFixed(4)}°, ${mapCenter.lng.toFixed(4)}°<br>
+                            Size: ${mapSize.x} x ${mapSize.y} px <br>
+                            Offset X: ${wind.offsetX.toFixed(4)}<br>
+                            Offset Y: ${wind.offsetY.toFixed(4)}
+                    </div>
+       
                 <div style="border-bottom: 1px solid rgba(255,255,255,0.3); margin-bottom: 8px; padding-bottom: 8px;">
-                    <strong>Map Bounds:</strong><br>
-                    N: ${nwBounds.lat.toFixed(5)}° | S: ${seBounds.lat.toFixed(5)}°<br>
-                    E: ${seBounds.lng.toFixed(5)}° | W: ${nwBounds.lng.toFixed(5)}°<br>
-                    Center: ${mapCenter.lat.toFixed(3)}°, ${mapCenter.lng.toFixed(3)}°<br>
-                    Zoom: ${map.getZoom().toFixed(1)}
-                </div>
+                    <strong>🌪️ Canvas Bounds:</strong><br>
+                    N: ${canvasBounds.north.toFixed(4)}° | S: ${canvasBounds.south.toFixed(4)}°<br>
+                    E: ${canvasBounds.east.toFixed(4)}° | W: ${canvasBounds.west.toFixed(4)}°<br>
+                    Center: ${canvasCenter.lat.toFixed(3)}°, ${canvasCenter.lon.toFixed(3)}°<br>
+                    Zoom: ${wind.zoom.toFixed(2)}<br>
+                    Center: ${canvasCenter.lat.toFixed(4)}°, ${canvasCenter.lon.toFixed(4)}°<br>
+                    Size: ${canvas.width} x ${canvas.height} px<br>
+                    Offset X: ${wind.offsetX.toFixed(4)}<br>
+                    Offset Y: ${wind.offsetY.toFixed(4)}
+                </div>   
                 <div style="border-bottom: 1px solid rgba(255,255,255,0.3); margin-bottom: 8px; padding-bottom: 8px;">
-                    <strong>Wind View Bounds:</strong><br>
-                    N: ${canvasBounds.north.toFixed(5)}° | S: ${canvasBounds.south.toFixed(5)}°<br>
-                    E: ${canvasBounds.east.toFixed(5)}° | W: ${canvasBounds.west.toFixed(5)}°<br>
-                    Center: ${canvasCenter.lat.toFixed(3)}°, ${canvasCenter.lon.toFixed(3)}°
+                    <strong>🌍 Cursor Coordinates:</strong><br>
+                    Screen: (${e.clientX}, ${e.clientY}) px<br>
+                    NDC: (${ndcX.toFixed(4)}, ${ndcY.toFixed(4)})<br>
+                    Map_ Lat/Lon: ${point.lat.toFixed(4)}°, ${point.lng.toFixed(4)}°<br>
+                     
+                    Wind Lat/Lon: ${windLatLon.lat.toFixed(4)}°, ${windLatLon.lon.toFixed(4)}°
                 </div>
+    
                 <div>
-                    <strong>Wind Data:</strong><br>
+                    <strong>🌬️ Wind Data:</strong><br>
                     Speed: ${(speed * 1.94384).toFixed(1)} kt<br>
-                    Direction: ${direction.toFixed(0)}°
+                    Direction: ${direction.toFixed(0)}°<br>
+                    U: ${windData ? windData.u.toFixed(3) : 'N/A'} m/s<br>
+                    V: ${windData ? windData.v.toFixed(3) : 'N/A'} m/s
                 </div>
             `;
         }
 
-        if (isDragging) {
-            const dx = e.clientX - lastX;
-            const dy = e.clientY - lastY;
-            
-            const center = map.getCenter();
-            const newLat = center.lat - (dy / map.getContainer().clientHeight) * 180;
-            const newLng = center.lng + (dx / map.getContainer().clientWidth) * 360;
-            
-            map.setView([newLat, newLng], map.getZoom(), {animate: false});
-            
-            lastX = e.clientX;
-            lastY = e.clientY;
-        }
+        
     });
 
     canvas.addEventListener('mouseup', () => {
@@ -227,17 +280,13 @@ document.addEventListener('DOMContentLoaded', function() {
         zoomController.updateDisplay();
     });
 
-    // Prevent context menu
-    canvas.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-    });
-
+    
     // GUI setup
     const gui = new dat.GUI({ width: 300 });
     const meta = {
         '2016-11-20+h': 0,
         'retina resolution': false,
-        'map zoom': 2.1,
+        'map zoom': 2.5,
         'opacity': 1.0,
         'wms opacity': 1.0,
         'reset view': function() {
@@ -385,6 +434,21 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCanvasSize();
     wind.syncWithLeafletBounds(map);
 
+    console.log('Canvas pixels:', {
+        width: canvas.width, 
+        height: canvas.height
+    });
+    
+    console.log('Display size:', {
+        width: canvas.style.width, 
+        height: canvas.style.height
+    });
+    
+    console.log('Window size:', {
+        width: window.innerWidth, 
+        height: window.innerHeight
+    });
+
     function createWindScale() {
         function msToKnots(ms) {
             return (ms * 1.94384).toFixed(1);
@@ -433,6 +497,12 @@ document.addEventListener('DOMContentLoaded', function() {
     createWindScale();
 
     function addCanvasReferencePoints() {
+        // Define reference points array at the start of the function
+        const referencePoints = [
+            // Example reference points - you can modify these
+            { lat: 0, lon: 0 }
+        ];
+    
         const overlayCanvas = document.createElement('canvas');
         overlayCanvas.id = 'canvas-points-overlay';
         overlayCanvas.style.cssText = `
@@ -443,10 +513,6 @@ document.addEventListener('DOMContentLoaded', function() {
             z-index: 999;
         `;
         document.getElementById('container').appendChild(overlayCanvas);
-    
-        const referencePoints = [
-            { lat: 80, lon: 45}
-        ];
     
         function updatePoints() {
             overlayCanvas.width = canvas.width;
@@ -487,10 +553,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
         window.addEventListener('resize', updatePoints);
         updatePoints();
-    }
     
-    addCanvasReferencePoints();
-
+        // Add utility functions to manage reference points
+        window.addReferencePoint = function(lat, lon) {
+            referencePoints.push({ lat, lon });
+            updatePoints();
+        };
+    
+        window.clearReferencePoints = function() {
+            referencePoints.length = 0;
+            updatePoints();
+        };
+    
+        window.getReferencePoints = function() {
+            return [...referencePoints];
+        };
+    }
     function testWindAtPoint(lat, lon) {
         if (wind && wind.windData) {
             console.log('Testing wind at:', { lat, lon });
@@ -507,7 +585,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-
+    
+    // Add utility functions to test wind data
+    function addWindTestingUtilities() {
+        // Make testWindAtPoint available globally
+        window.testWindAtPoint = testWindAtPoint;
+        
+        // Add additional testing utilities
+        window.testWindAtScreenPoint = function(screenX, screenY) {
+            if (wind && wind.windData) {
+                const latLon = wind.screenToLatLon(screenX, screenY);
+                console.log('Testing wind at screen point:', { screenX, screenY, latLon });
+                testWindAtPoint(latLon.lat, latLon.lon);
+            }
+        };
+    }
+    
+    // Call this after wind initialization
+    addWindTestingUtilities();
     window.testWindAtPoint = testWindAtPoint;
 
     function analyzeWindPNG(imageData, windData) {
