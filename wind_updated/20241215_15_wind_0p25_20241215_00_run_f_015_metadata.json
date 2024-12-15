@@ -1,0 +1,19 @@
+{
+  "source": "http://nomads.ncep.noaa.gov",
+  "date": "2024-12-15T15:00Z",
+  "width": 1440,
+  "height": 721,
+  "uMin": -24,
+  "uMax": 29.3,
+  "vMin": -21,
+  "vMax": 25.1,
+  "modelRun": {
+    "date": "20241215",
+    "hour": "00"
+  },
+  "sourceFiles": {
+    "ugrd": "20241215_15_UGRD_0p25_20241215_00_run_f_015.json",
+    "vgrd": "20241215_15_VGRD_0p25_20241215_00_run_f_015.json",
+    "generated": "2024-12-15T10:31:21.937Z"
+  }
+}
