@@ -69,7 +69,7 @@ class WindGL {
         
         // Use single world resolution
         this.gridResX = 1440*2;
-        this.gridResY = 720*2
+        this.gridResY = 720*2;
         this.pointCount = this.gridResX * this.gridResY;
         
         // Longitude and latitude ranges
@@ -78,20 +78,68 @@ class WindGL {
         
         this.createShaders();
         this.createPoints();
+
         
-        // Default color ramp
         this.colorRamps = {
             0.0: '#3288bd',
-            0.1: '#66c2a5',
-            0.2: '#abdda4', 
-            0.3: '#e6f598',
-            0.4: '#fee08b',
-            0.5: '#fdae61',
-            0.6: '#f46d43',
-            1.0: '#d53e4f'  
+            0.5: '#66c2a5',
+            0.1: '#abdda4', 
+            0.15: '#e6f598',
+            0.2: '#fee08b',
+            0.3: '#fdae61',  
+            0.4: '#f46d43',
+            0.45: '#d53e4f',  // Moved red color to 0.7
+            1.0: '#7d44a5'   // Moved purple color to 1.0
         };
         this.setColorRamp(this.colorRamps);
     }
+        
+
+
+
+        /*
+        this.colorRamps = {
+            0.0: 'rgb(98,113,183)',    // 0 m/s
+            0.02: 'rgb(57,97,159)',    // 1 m/s
+            0.06: 'rgb(74,148,169)',   // 3 m/s
+            0.1: 'rgb(77,141,123)',    // 5 m/s
+            0.14: 'rgb(83,165,83)',    // 7 m/s
+            0.18: 'rgb(53,159,53)',    // 9 m/s
+            0.22: 'rgb(167,157,81)',   // 11 m/s
+            0.26: 'rgb(159,127,58)',   // 13 m/s
+            0.3: 'rgb(161,108,92)',    // 15 m/s
+            0.34: 'rgb(129,58,78)',    // 17 m/s
+            0.38: 'rgb(175,80,136)',   // 19 m/s
+            0.42: 'rgb(117,74,147)',   // 21 m/s
+            0.48: 'rgb(109,97,163)',   // 24 m/s
+            0.54: 'rgb(68,105,141)',   // 27 m/s
+            0.58: 'rgb(92,144,152)',   // 29 m/s
+            0.72: 'rgb(125,68,165)',   // 36 m/s
+            0.92: 'rgb(231,215,215)',  // 46 m/s
+            1.0: 'rgb(128,128,128)'    // 104 m/s
+        };
+        this.setColorRamp(this.colorRamps);
+    }
+    */
+    /*
+    this.colorRamps = {
+        0.0: 'rgb(64,89,191)',     // Deep blue
+        0.05: 'rgb(71,142,196)',   // Light blue
+        0.1: 'rgb(76,195,188)',    // Cyan
+        0.15: 'rgb(86,205,99)',    // Light green
+        0.2: 'rgb(148,223,87)',    // Lime green
+        0.3: 'rgb(205,225,97)',    // Yellow-green
+        0.4: 'rgb(248,207,87)',    // Yellow
+        0.5: 'rgb(252,174,75)',    // Orange
+        0.6: 'rgb(245,132,66)',    // Light red
+        0.7: 'rgb(235,89,95)',     // Red
+        0.8: 'rgb(222,67,130)',    // Pink-red
+        0.9: 'rgb(178,67,175)',    // Purple
+        1.0: 'rgb(156,67,205)'     // Deep purple
+    };
+        this.setColorRamp(this.colorRamps);
+    }
+    */
 
     createShaders() {
         const vertexSource = `

@@ -4,6 +4,7 @@
 <head>
     <title>Wind Visualization with GUI</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css?family=Lobster" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -27,6 +28,7 @@
             opacity: 1;
             transition: opacity 0.2s ease;
         }
+
         .wms-layer {
             filter: brightness(0) contrast(2) !important;
             mix-blend-mode: normal;
@@ -39,9 +41,8 @@
             opacity: 1 !important;
             z-index: 5;
             transform: scale(1) !important;
-           
         }
-                        
+        
         #info-display {
             position: absolute;
             bottom: 10px;
@@ -56,7 +57,7 @@
             max-width: 400px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        /* Ensure the map container is visible and above canvas */
+
         #map-container {
             position: absolute;
             top: 0;
@@ -65,12 +66,12 @@
             height: 100%;
             z-index: 6;
             opacity: 1;
-            pointer-events: none; /* This allows clicking through to the canvas */
+            pointer-events: none;
         }
 
         .leaflet-layer {
             opacity: 1 !important;
-            pointer-events: none !important; /* This ensures all leaflet layers pass through events */
+            pointer-events: none !important;
         }
 
         .leaflet-container {
@@ -115,6 +116,7 @@
             white-space: nowrap;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
+
         #wind-info {
             display: none;
             position: absolute;
@@ -149,7 +151,6 @@
             z-index: 10 !important;
         }
         .dg.main {
-            
             margin-right: 10px;
         }
         .dg.main .close-button {
@@ -157,6 +158,76 @@
         }
         .dg.main .close-button:hover {
             background-color: rgba(0, 0, 0, 0.7);
+        }
+        .time-slider-container {
+            position: absolute;
+            bottom: 0px;
+            left: 80px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 30px 20px;
+            border-radius: 50px;
+            z-index: 1000;
+            width: calc(100% - 100px);
+            max-width: 800px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .time-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .time-button {
+            background: rgba(238, 235, 235, 0.986);
+            border: none;
+            color: rgb(214, 23, 23);
+            padding: 5px 10px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .time-button:hover {
+            background: rgba(243, 241, 241, 0.986);
+        }
+
+        .time-button.active {
+            background: rgb(236, 236, 240);
+        }
+
+        .time-slider {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgb(245, 241, 241);
+            border-radius: 20px;
+            outline: none;
+        }
+
+        .time-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: rgb(241, 5, 5);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .time-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .time-label {
+            color: white;
+            text-align: center;
+            font-size: 14px;
+            font-family: monospace;
+            font:bold;
         }
 
         /* Responsive adjustments */
@@ -174,11 +245,29 @@
                 font-size: 11px;
                 padding: 8px;
             }
+            .logo-control {
+                position: absolute;
+                top: 10px;
+                left: 50px;
+                z-index: 1000;
+                background-color: white;
+                padding: 5px;
+                border-radius: 5px;
+                box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+            }
+            .logo-control img {
+                width: 120px;
+            }
+            .logo-text {
+                font-family: 'Lobster', cursive;
+                font-size: 36px;
+                color: white;
+                margin: 0;
+            }
         }
     </style>
 </head>
 <body>
-    
     <div id="container">
         <canvas id="canvas"></canvas>
         <div id="map-container"></div>
@@ -200,9 +289,18 @@
     
         <div id="loading">Loading...</div>
     </div>
+    <div class="time-slider-container">
+        <button class="time-button" id="playPauseBtn">Play</button>
+        <button class="time-button" id="prevTimeBtn">◀</button>
+        <button class="time-button" id="nextTimeBtn">▶</button>
+        <button class="time-button" id="speedBtn">1x</button>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 5px;">
+            <input type="range" class="time-slider" id="timeSlider" min="0" max="100" value="0">
+            <div class="time-label" id="timeLabel"></div>
+        </div>
+    </div>
 
     <!-- Scripts -->
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     <script src="./wind-gl.js"></script>

@@ -43,8 +43,28 @@ document.addEventListener('DOMContentLoaded', function() {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 19,
-        minZoom: 3
+        minZoom: 4
     }).addTo(map);
+
+   
+
+    // Create custom logo control
+    // Custom logo control
+    L.Control.Logo = L.Control.extend({
+        onAdd: function(map) {
+        var container = L.DomUtil.create('div', 'logo-control');
+        var img = L.DomUtil.create('img', '', container);
+        img.src = 'path/to/your/logo.png'; // Replace with the path to your logo image
+        img.alt = 'Logo';
+        return container;
+        },
+    
+        onRemove: function(map) {}
+    });
+    
+    // Add logo control to the map
+        var logoControl = new L.Control.Logo();
+        map.addControl(logoControl);
 
     const infoDisplay = document.createElement('div');
     infoDisplay.id = 'info-display';
@@ -98,32 +118,89 @@ document.addEventListener('DOMContentLoaded', function() {
     wind.draw();
 
     // Define the wind files mapping
-    const windFiles = {'20241220_12': '20241220_12_wind_0p25_20241220_12_run_f_000',
-'20241220_15': '20241220_15_wind_0p25_20241220_12_run_f_003',
-'20241220_18': '20241220_18_wind_0p25_20241220_12_run_f_006',
-'20241220_21': '20241220_21_wind_0p25_20241220_12_run_f_009',
-'20241221_00': '20241221_00_wind_0p25_20241220_12_run_f_012',
-'20241221_03': '20241221_03_wind_0p25_20241220_12_run_f_015',
-'20241221_06': '20241221_06_wind_0p25_20241220_12_run_f_018',
-'20241221_09': '20241221_09_wind_0p25_20241220_12_run_f_021',
-'20241221_12': '20241221_12_wind_0p25_20241220_12_run_f_024',
-'20241221_15': '20241221_15_wind_0p25_20241220_15_run_f_027',
-'20241221_18': '20241221_18_wind_0p25_20241220_12_run_f_030',
-'20241221_21': '20241221_21_wind_0p25_20241220_12_run_f_033',
-'20241222_00': '20241222_00_wind_0p25_20241220_12_run_f_036',
-'20241222_03': '20241222_03_wind_0p25_20241220_12_run_f_039',
-'20241222_06': '20241222_06_wind_0p25_20241220_12_run_f_042',
-'20241222_09': '20241222_09_wind_0p25_20241220_12_run_f_045',
-'20241222_12': '20241222_12_wind_0p25_20241220_12_run_f_048',
-'20241222_15': '20241222_15_wind_0p25_20241220_12_run_f_051',
-'20241222_18': '20241222_18_wind_0p25_20241220_12_run_f_054',
-'20241222_21': '20241222_21_wind_0p25_20241220_12_run_f_057',
-'20241223_00': '20241223_00_wind_0p25_20241220_12_run_f_060',
-'20241223_03': '20241223_03_wind_0p25_20241220_12_run_f_063',
-'20241223_06': '20241223_06_wind_0p25_20241220_12_run_f_066',
-'20241223_09': '20241223_09_wind_0p25_20241220_12_run_f_069',
-'20241223_12': '20241223_12_wind_0p25_20241220_12_run_f_072'
-
+    const windFiles = {
+        '20241221_06': '20241221_06_wind_0p25_20241221_06_run_f_000',
+        '20241221_09': '20241221_09_wind_0p25_20241221_06_run_f_003',
+        '20241221_12': '20241221_12_wind_0p25_20241221_06_run_f_006',
+        '20241221_15': '20241221_15_wind_0p25_20241221_06_run_f_009',
+        '20241221_18': '20241221_18_wind_0p25_20241221_06_run_f_012',
+        '20241221_21': '20241221_21_wind_0p25_20241221_06_run_f_015',
+        '20241222_00': '20241222_00_wind_0p25_20241221_06_run_f_018',
+        '20241222_03': '20241222_03_wind_0p25_20241221_06_run_f_021',
+        '20241222_06': '20241222_06_wind_0p25_20241221_06_run_f_024',
+        '20241222_09': '20241222_09_wind_0p25_20241221_06_run_f_027',
+        '20241222_12': '20241222_12_wind_0p25_20241221_06_run_f_030',
+        '20241222_15': '20241222_15_wind_0p25_20241221_06_run_f_033',
+        '20241222_18': '20241222_18_wind_0p25_20241221_06_run_f_036',
+        '20241222_21': '20241222_21_wind_0p25_20241221_06_run_f_039',
+        '20241223_00': '20241223_00_wind_0p25_20241221_06_run_f_042',
+        '20241223_03': '20241223_03_wind_0p25_20241221_06_run_f_045',
+        '20241223_06': '20241223_06_wind_0p25_20241221_06_run_f_048',
+        '20241223_09': '20241223_09_wind_0p25_20241221_06_run_f_051',
+        '20241223_12': '20241223_12_wind_0p25_20241221_06_run_f_054',
+        '20241223_15': '20241223_15_wind_0p25_20241221_06_run_f_057',
+        '20241223_18': '20241223_18_wind_0p25_20241221_06_run_f_060',
+        '20241223_21': '20241223_21_wind_0p25_20241221_06_run_f_063',
+        '20241224_00': '20241224_00_wind_0p25_20241221_06_run_f_066',
+        '20241224_03': '20241224_03_wind_0p25_20241221_06_run_f_069',
+        '20241224_06': '20241224_06_wind_0p25_20241221_06_run_f_072',
+        '20241224_09': '20241224_09_wind_0p25_20241221_06_run_f_075',
+        '20241224_12': '20241224_12_wind_0p25_20241221_06_run_f_078',
+        '20241224_15': '20241224_15_wind_0p25_20241221_06_run_f_081',
+        '20241224_18': '20241224_18_wind_0p25_20241221_06_run_f_084',
+        '20241224_21': '20241224_21_wind_0p25_20241221_06_run_f_087',
+        '20241225_00': '20241225_00_wind_0p25_20241221_06_run_f_090',
+        '20241225_03': '20241225_03_wind_0p25_20241221_06_run_f_093',
+        '20241225_06': '20241225_06_wind_0p25_20241221_06_run_f_096',
+        '20241225_09': '20241225_09_wind_0p25_20241221_06_run_f_099',
+        '20241225_12': '20241225_12_wind_0p25_20241221_06_run_f_102',
+        '20241225_15': '20241225_15_wind_0p25_20241221_06_run_f_105',
+        '20241225_18': '20241225_18_wind_0p25_20241221_06_run_f_108',
+        '20241225_21': '20241225_21_wind_0p25_20241221_06_run_f_111',
+        '20241226_00': '20241226_00_wind_0p25_20241221_06_run_f_114',
+        '20241226_03': '20241226_03_wind_0p25_20241221_06_run_f_117',
+        '20241226_06': '20241226_06_wind_0p25_20241221_06_run_f_120',
+        '20241226_09': '20241226_09_wind_0p25_20241221_06_run_f_123',
+        '20241226_12': '20241226_12_wind_0p25_20241221_06_run_f_126',
+        '20241226_15': '20241226_15_wind_0p25_20241221_06_run_f_129',
+        '20241226_18': '20241226_18_wind_0p25_20241221_06_run_f_132',
+        '20241226_21': '20241226_21_wind_0p25_20241221_06_run_f_135',
+        '20241227_00': '20241227_00_wind_0p25_20241221_06_run_f_138',
+        '20241227_03': '20241227_03_wind_0p25_20241221_06_run_f_141',
+        '20241227_06': '20241227_06_wind_0p25_20241221_06_run_f_144',
+        '20241227_09': '20241227_09_wind_0p25_20241221_06_run_f_147',
+        '20241227_12': '20241227_12_wind_0p25_20241221_06_run_f_150',
+        '20241227_15': '20241227_15_wind_0p25_20241221_06_run_f_153',
+        '20241227_18': '20241227_18_wind_0p25_20241221_06_run_f_156',
+        '20241227_21': '20241227_21_wind_0p25_20241221_06_run_f_159',
+        '20241228_00': '20241228_00_wind_0p25_20241221_06_run_f_162',
+        '20241228_03': '20241228_03_wind_0p25_20241221_06_run_f_165',
+        '20241228_06': '20241228_06_wind_0p25_20241221_06_run_f_168',
+        '20241228_09': '20241228_09_wind_0p25_20241221_06_run_f_171',
+        '20241228_12': '20241228_12_wind_0p25_20241221_06_run_f_174',
+        '20241228_15': '20241228_15_wind_0p25_20241221_06_run_f_177',
+        '20241228_18': '20241228_18_wind_0p25_20241221_06_run_f_180',
+        '20241228_21': '20241228_21_wind_0p25_20241221_06_run_f_183',
+        '20241229_00': '20241229_00_wind_0p25_20241221_06_run_f_186',
+        '20241229_03': '20241229_03_wind_0p25_20241221_06_run_f_189',
+        '20241229_06': '20241229_06_wind_0p25_20241221_06_run_f_192',
+        '20241229_09': '20241229_09_wind_0p25_20241221_06_run_f_195',
+        '20241229_12': '20241229_12_wind_0p25_20241221_06_run_f_198',
+        '20241229_15': '20241229_15_wind_0p25_20241221_06_run_f_201',
+        '20241229_18': '20241229_18_wind_0p25_20241221_06_run_f_204',
+        '20241229_21': '20241229_21_wind_0p25_20241221_06_run_f_207',
+        '20241230_00': '20241230_00_wind_0p25_20241221_06_run_f_210',
+        '20241230_03': '20241230_03_wind_0p25_20241221_06_run_f_213',
+        '20241230_06': '20241230_06_wind_0p25_20241221_06_run_f_216',
+        '20241230_09': '20241230_09_wind_0p25_20241221_06_run_f_219',
+        '20241230_12': '20241230_12_wind_0p25_20241221_06_run_f_222',
+        '20241230_15': '20241230_15_wind_0p25_20241221_06_run_f_225',
+        '20241230_18': '20241230_18_wind_0p25_20241221_06_run_f_228',
+        '20241230_21': '20241230_21_wind_0p25_20241221_06_run_f_231',
+        '20241231_00': '20241231_00_wind_0p25_20241221_06_run_f_234',
+        '20241231_03': '20241231_03_wind_0p25_20241221_06_run_f_237',
+        '20241231_06': '20241231_06_wind_0p25_20241221_06_run_f_240'
+        
     };
 
     function formatBounds(bounds) {
@@ -261,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // GUI setup
     const gui = new dat.GUI({ width: 300 });
     const meta = {
-        'forecast time': '20241220_12',
+        'forecast time': '20241221_06',
         'retina resolution': false,
         'map zoom': 3,
         'opacity': 1.0,
@@ -309,21 +386,83 @@ document.addEventListener('DOMContentLoaded', function() {
     wmsOpacityController.onChange((value) => {
         cbLayer.setOpacity(value);
     });
+    // Time slider controls
+    const timeSlider = document.getElementById('timeSlider');
+    const timeLabel = document.getElementById('timeLabel');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const prevTimeBtn = document.getElementById('prevTimeBtn');
+    const nextTimeBtn = document.getElementById('nextTimeBtn');
+    const speedBtn = document.getElementById('speedBtn');
 
-    // Animation controls
-    const animationControl = gui.add(meta, 'toggle animation');
+    let isPlaying = false;
     let animationFrame;
     let lastTime = 0;
-    const frameInterval = 500;
+    let frameInterval = 1000; // Default 1 second interval
+    let speedMultiplier = 1;
 
-    animationControl.onChange((value) => {
-        if (value) {
+    // Convert windFiles keys to array for easier navigation
+    const timeSteps = Object.keys(windFiles);
+    timeSlider.max = timeSteps.length - 1;
+
+    // Update time label function
+    function updateTimeLabel(index) {
+        const time = timeSteps[index];
+        const date = new Date(time.substring(0, 4) + '-' + 
+                            time.substring(4, 6) + '-' + 
+                            time.substring(6, 8) + 'T' + 
+                            time.substring(9, 11) + ':00:00Z');
+        timeLabel.textContent = date.toLocaleString();
+    }
+
+    // Initialize slider and label
+    updateTimeLabel(0);
+
+    // Slider event listener
+    timeSlider.addEventListener('input', function() {
+        const index = parseInt(this.value);
+        updateTimeLabel(index);
+        updateWind(timeSteps[index]);
+    });
+
+    // Play/Pause button
+    playPauseBtn.addEventListener('click', function() {
+        isPlaying = !isPlaying;
+        this.textContent = isPlaying ? 'Pause' : 'Play';
+        if (isPlaying) {
             startAnimation();
         } else {
             stopAnimation();
         }
     });
 
+    // Previous/Next buttons
+    prevTimeBtn.addEventListener('click', function() {
+        const currentIndex = parseInt(timeSlider.value);
+        if (currentIndex > 0) {
+            timeSlider.value = currentIndex - 1;
+            updateTimeLabel(currentIndex - 1);
+            updateWind(timeSteps[currentIndex - 1]);
+        }
+    });
+
+    nextTimeBtn.addEventListener('click', function() {
+        const currentIndex = parseInt(timeSlider.value);
+        if (currentIndex < timeSteps.length - 1) {
+            timeSlider.value = currentIndex + 1;
+            updateTimeLabel(currentIndex + 1);
+            updateWind(timeSteps[currentIndex + 1]);
+        }
+    });
+
+    // Speed button
+    speedBtn.addEventListener('click', function() {
+        const speeds = [1, 2, 4, 8];
+        speedMultiplier = speeds[(speeds.indexOf(speedMultiplier) + 1) % speeds.length];
+        this.textContent = speedMultiplier + 'x';
+        frameInterval = 1000 / speedMultiplier;
+    });
+
+    // Replace your existing animation functions with these:
     function startAnimation() {
         lastTime = performance.now();
         animate();
@@ -336,25 +475,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function animate() {
+        if (!isPlaying) return;
+        
         const currentTime = performance.now();
         if (currentTime - lastTime >= frameInterval) {
-            const windFileKeys = Object.keys(windFiles);
-            const currentIndex = windFileKeys.indexOf(meta['forecast time']);
-            const nextIndex = (currentIndex + 1) % windFileKeys.length;
-            const nextForecastTime = windFileKeys[nextIndex];
-    
-            meta['forecast time'] = nextForecastTime;
-            timeControl.updateDisplay();
-            updateWind(nextForecastTime);
+            const currentIndex = parseInt(timeSlider.value);
+            const nextIndex = (currentIndex + 1) % timeSteps.length;
+            
+            timeSlider.value = nextIndex;
+            updateTimeLabel(nextIndex);
+            updateWind(timeSteps[nextIndex]);
+            
+            // Stop at the end unless speed is set
+            if (nextIndex === 0 && speedMultiplier === 1) {
+                isPlaying = false;
+                playPauseBtn.textContent = 'Play';
+                return;
+            }
+            
             lastTime = currentTime;
         }
         animationFrame = requestAnimationFrame(animate);
     }
-
+    
     function updateWind(forecastTime) {
         const windFileName = windFiles[forecastTime];
-        const metadataPath = 'wind_updated/' + windFileName + '_metadata.json';
-        const imagePath = 'wind_updated/' + windFileName + '.png';
+        const metadataPath = 'wind/' + windFileName + '_metadata.json';
+        const imagePath = 'wind/' + windFileName + '.png';
     
         fetch(metadataPath)
             .then(response => {
@@ -439,17 +586,61 @@ document.addEventListener('DOMContentLoaded', function() {
         const windScaleDiv = document.querySelector('.wind-scale');
         const gradientEl = windScaleDiv.querySelector('.wind-scale-gradient');
         const labelsEl = windScaleDiv.querySelector('.wind-scale-labels');
-    
+        
+        
         const colorStops = [
             { stop: 0.0, color: '#3288bd', knots: 0 },
-            { stop: 0.1, color: '#66c2a5', knots: 10 },
-            { stop: 0.2, color: '#abdda4', knots: 20 },
-            { stop: 0.3, color: '#e6f598', knots: 30 },
-            { stop: 0.4, color: '#fee08b', knots: 40 },
-            { stop: 0.5, color: '#fdae61', knots: 50 },
-            { stop: 0.6, color: '#f46d43', knots: 60 },
-            { stop: 1.0, color: '#d53e4f', knots: 70 }
+            { stop: 0.5, color: '#66c2a5', knots: 10 },
+            { stop: 0.1, color: '#abdda4', knots: 20 },
+            { stop: 0.15, color: '#e6f598', knots: 30 },
+            { stop: 0.2, color: '#fee08b', knots: 40 },
+            { stop: 0.3, color: '#fdae61', knots: 50 },
+            { stop: 0.4, color: '#f46d43', knots: 60 },
+            { stop: 0.45, color: '#d53e4f', knots: 65 },
+            { stop: 1.0, color: '#7d44a5', knots: 70 }
         ];
+        
+        
+        /*
+        const colorStops = [
+            { stop: 0.0, color: 'rgb(98,113,183)', speed: 0 },
+            { stop: 0.02, color: 'rgb(57,97,159)', speed: 1 },
+            { stop: 0.06, color: 'rgb(74,148,169)', speed: 3 },
+            { stop: 0.1, color: 'rgb(77,141,123)', speed: 5 },
+            { stop: 0.14, color: 'rgb(83,165,83)', speed: 7 },
+            { stop: 0.18, color: 'rgb(53,159,53)', speed: 9 },
+            { stop: 0.22, color: 'rgb(167,157,81)', speed: 11 },
+            { stop: 0.26, color: 'rgb(159,127,58)', speed: 13 },
+            { stop: 0.3, color: 'rgb(161,108,92)', speed: 15 },
+            { stop: 0.34, color: 'rgb(129,58,78)', speed: 17 },
+            { stop: 0.38, color: 'rgb(175,80,136)', speed: 19 },
+            { stop: 0.42, color: 'rgb(117,74,147)', speed: 21 },
+            { stop: 0.48, color: 'rgb(109,97,163)', speed: 24 },
+            { stop: 0.54, color: 'rgb(68,105,141)', speed: 27 },
+            { stop: 0.58, color: 'rgb(92,144,152)', speed: 29 },
+            { stop: 0.72, color: 'rgb(125,68,165)', speed: 36 },
+            { stop: 0.92, color: 'rgb(231,215,215)', speed: 46 },
+            { stop: 1.0, color: 'rgb(128,128,128)', speed: 104 }
+        ];
+        */
+        
+       /*
+        const colorStops = [
+            { stop: 0.0, color: 'rgb(64,89,191)', speed: 0 },
+            { stop: 0.05, color: 'rgb(71,142,196)', speed: 5 },
+            { stop: 0.1, color: 'rgb(76,195,188)', speed: 10 },
+            { stop: 0.15, color: 'rgb(86,205,99)', speed: 15 },
+            { stop: 0.2, color: 'rgb(148,223,87)', speed: 20 },
+            { stop: 0.3, color: 'rgb(205,225,97)', speed: 30 },
+            { stop: 0.4, color: 'rgb(248,207,87)', speed: 40 },
+            { stop: 0.5, color: 'rgb(252,174,75)', speed: 50 },
+            { stop: 0.6, color: 'rgb(245,132,66)', speed: 60 },
+            { stop: 0.7, color: 'rgb(235,89,95)', speed: 70 },
+            { stop: 0.8, color: 'rgb(222,67,130)', speed: 80 },
+            { stop: 0.9, color: 'rgb(178,67,175)', speed: 90 },
+            { stop: 1.0, color: 'rgb(156,67,205)', speed: 100 }
+        ];
+        */
     
         const gradientString = `linear-gradient(to top, ${
             colorStops.map(({stop, color}) => `${color} ${stop * 100}%`).join(', ')
@@ -469,5 +660,5 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial setup
     updateCanvasSize();
     wind.syncWithLeafletBounds(map);
-    updateWind('20241220_12');
+    updateWind('20241221_06');
 });
