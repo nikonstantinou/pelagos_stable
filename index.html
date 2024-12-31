@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+   
 <head>
     <title>Wind Visualization with GUI</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
@@ -147,6 +148,16 @@
             padding: 12px 24px;
             border-radius: 4px;
         }
+        #streamlines-canvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.2;
+        }
         .dg.ac {
             z-index: 10 !important;
         }
@@ -223,7 +234,7 @@
         }
 
         .time-label {
-            color: white;
+            color: black;
             text-align: center;
             font-size: 14px;
             font-family: monospace;
@@ -270,7 +281,9 @@
 <body>
     <div id="container">
         <canvas id="canvas"></canvas>
+        <canvas id="streamlines-canvas"></canvas>
         <div id="map-container"></div>
+    </div>
         
         <div class="wind-scale">
             <div class="wind-scale-gradient"></div>
@@ -289,6 +302,9 @@
     
         <div id="loading">Loading...</div>
     </div>
+    <body>
+        <canvas id="coastline"></canvas>
+        
     <div class="time-slider-container">
         <button class="time-button" id="playPauseBtn">Play</button>
         <button class="time-button" id="prevTimeBtn">◀</button>

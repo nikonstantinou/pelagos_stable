@@ -79,7 +79,7 @@ class WindGL {
         this.createShaders();
         this.createPoints();
 
-        
+      /*  
         this.colorRamps = {
             0.0: '#3288bd',
             0.5: '#66c2a5',
@@ -94,34 +94,35 @@ class WindGL {
         this.setColorRamp(this.colorRamps);
     }
         
+          */
 
 
 
-        /*
-        this.colorRamps = {
-            0.0: 'rgb(98,113,183)',    // 0 m/s
-            0.02: 'rgb(57,97,159)',    // 1 m/s
-            0.06: 'rgb(74,148,169)',   // 3 m/s
-            0.1: 'rgb(77,141,123)',    // 5 m/s
-            0.14: 'rgb(83,165,83)',    // 7 m/s
-            0.18: 'rgb(53,159,53)',    // 9 m/s
-            0.22: 'rgb(167,157,81)',   // 11 m/s
-            0.26: 'rgb(159,127,58)',   // 13 m/s
-            0.3: 'rgb(161,108,92)',    // 15 m/s
-            0.34: 'rgb(129,58,78)',    // 17 m/s
-            0.38: 'rgb(175,80,136)',   // 19 m/s
-            0.42: 'rgb(117,74,147)',   // 21 m/s
-            0.48: 'rgb(109,97,163)',   // 24 m/s
-            0.54: 'rgb(68,105,141)',   // 27 m/s
-            0.58: 'rgb(92,144,152)',   // 29 m/s
-            0.72: 'rgb(125,68,165)',   // 36 m/s
-            0.92: 'rgb(231,215,215)',  // 46 m/s
-            1.0: 'rgb(128,128,128)'    // 104 m/s
-        };
-        this.setColorRamp(this.colorRamps);
+     
+    this.colorRamps = {
+        0.0: 'rgb(118,133,223)',    // 0 m/s - Brighter blue
+        0.02: 'rgb(67,117,199)',    // 1 m/s - More saturated blue
+        0.06: 'rgb(84,178,209)',    // 3 m/s - Brighter cyan
+        0.1: 'rgb(87,171,143)',     // 5 m/s - More vibrant teal
+        0.16: 'rgb(93,205,93)',     // 7 m/s - Brighter green
+        0.20: 'rgb(63,199,63)',     // 9 m/s - More saturated green
+        0.24: 'rgb(207,197,81)',    // 11 m/s - Brighter yellow
+        0.30: 'rgb(199,147,58)',    // 13 m/s - More saturated orange
+        0.32: 'rgb(201,118,92)',     // 15 m/s - Brighter orange-red
+        0.38: 'rgb(169,58,78)',     // 17 m/s - More saturated red
+        0.40: 'rgb(215,80,156)',    // 19 m/s - Brighter magenta
+        0.44: 'rgb(147,74,187)',    // 21 m/s - More saturated purple
+        0.52: 'rgb(129,107,223)',   // 24 m/s - Brighter purple-blue
+        0.56: 'rgb(78,125,181)',    // 27 m/s - More saturated blue
+        0.64: 'rgb(102,174,192)',   // 29 m/s - Brighter cyan
+        0.70: 'rgb(155,78,225)',    // 36 m/s - More vibrant purple
+        0.92: 'rgb(255,235,235)',   // 46 m/s - Almost white
+        1.0: 'rgb(168,168,168)'     // 104 m/s - Brighter gray
+    };
+    this.setColorRamp(this.colorRamps);
     }
-    */
-    /*
+ 
+   /*
     this.colorRamps = {
         0.0: 'rgb(64,89,191)',     // Deep blue
         0.05: 'rgb(71,142,196)',   // Light blue
@@ -161,7 +162,7 @@ class WindGL {
         float projectLat(float lat) {
             float sina = sin(lat * PI / 180.0);
             float y = log((1.0 + sina) / (1.0 - sina));
-            return y / PI;
+            return y/PI ;
         }
         
         void main() {
@@ -214,7 +215,64 @@ class WindGL {
         
         this.program = createProgram(this.gl, vertexSource, fragmentSource);
     }
+    // Add this to your WindGL class in wind-gl.js
 
+    getWindAtLatLon(lat, lon) {
+        if (!this.windData || !this.windData.image) return null;
+    
+        // Convert lat/lon to texture coordinates
+        const x = (lon + 180) / 360;
+        const y = (90 - lat) / 180;
+    
+        // Get pixel coordinates in the wind texture
+        const width = this.windData.image.width;
+        const height = this.windData.image.height;
+        const px = Math.floor(x * width);
+        const py = Math.floor(y * height);
+    
+        if (px < 0 || px >= width || py < 0 || py >= height) return null;
+    
+        // Create temporary canvas if not exists
+        if (!this._tempCanvas) {
+            this._tempCanvas = document.createElement('canvas');
+            this._tempCtx = this._tempCanvas.getContext('2d', { willReadFrequently: true });
+            this._tempCanvas.width = width;
+            this._tempCanvas.height = height;
+            // Draw the image once
+            this._tempCtx.drawImage(this.windData.image, 0, 0);
+            // Store the image data
+            this._imageData = this._tempCtx.getImageData(0, 0, width, height).data;
+        }
+    
+        // Get wind data from stored image data
+        const i = (py * width + px) * 4;
+        const u = this.windData.uMin + (this._imageData[i] / 255) * (this.windData.uMax - this.windData.uMin);
+        const v = this.windData.vMin + (this._imageData[i + 1] / 255) * (this.windData.vMax - this.windData.vMin);
+    
+        return { u, v };
+    }
+    
+    // Method to get wind data at any point
+    getWindAtPoint(point) {
+        if (!this.windData || !this.map) return null;
+        return this.getWindAtLatLon(point.lat, point.lng);
+    }
+
+    // Method to get bounds
+    getBounds() {
+        if (!this.map) return null;
+        return this.map.getBounds();
+    }
+
+    // Method to convert screen coordinates to lat/lon
+    screenToLatLon(x, y) {
+        if (!this.map) return null;
+        const point = this.map.containerPointToLatLng([x, y]);
+        return {
+            lat: point.lat,
+            lng: point.lng
+        };
+    }
     createPoints() {
         const points = new Float32Array(this.pointCount * 2);
         
